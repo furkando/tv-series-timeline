@@ -75,7 +75,7 @@ export default function SeriesDetail() {
   const startScraping = async (seriesId: number) => {
     try {
       const response = await fetch(
-        "https://eorjahtiettxyfwqvfdz.supabase.co/functions/v1/scrape-series",
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/scrape-series`,
         {
           method: "POST",
           headers: {

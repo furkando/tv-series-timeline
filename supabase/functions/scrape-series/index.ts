@@ -93,8 +93,13 @@ serve(async (req) => {
           `${MOVIE_API_URL}/tv/${seriesId}/season/${season.season_number}/episode/${episode}/credits`,
         );
 
-        if (!credits.cast || credits.cast.length === 0) {
+        let cast = credits.cast;
+        if (!cast || cast.length === 0) {
           continue;
+        }
+
+        if (credits.guest_stars) {
+          cast = cast.concat(credits.guest_stars);
         }
 
         const res = await supabase
