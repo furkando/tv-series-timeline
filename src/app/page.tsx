@@ -22,9 +22,20 @@ export default function Home() {
     }
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
+
   return (
-    <main className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">TV Series Tracker</h1>
+    <main
+      className="container p-4 min-h-[100vh] h-full flex flex-col items-center justify-center"
+      onKeyDown={handleKeyPress}
+    >
+      <h1 className="text-xl font-bold mb-4">
+        TV Series Character Timeline
+      </h1>
       <div className="flex space-x-2 mb-4">
         <Input
           type="text"
@@ -39,7 +50,6 @@ export default function Home() {
           <Link href={`/series/${series.id}`} key={series.id}>
             <div key={series.id} className="border p-4 rounded">
               <h2 className="text-xl font-semibold">{series.name}</h2>
-              {/* <p clafssName="text-sm text-gray-600">{series.overview}</p> */}
               <Image
                 src={`https://image.tmdb.org/t/p/w500${series.poster_path}`}
                 alt={series.name}

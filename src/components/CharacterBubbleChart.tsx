@@ -1,16 +1,16 @@
-import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
+import React, { useEffect, useRef, useState } from "react";
 
-interface Character {
-  id: string;
+export type Character = {
+  id: number;
   name: string;
-  frequency: number;
   image: string;
-}
+  frequency: number;
+};
 
-interface CharacterBubbleChartProps {
+type CharacterBubbleChartProps = {
   data: Character[];
-}
+};
 
 const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
   data,
@@ -21,9 +21,9 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     if (!data.length || !svgRef.current) return;
 
     const svg = d3.select(svgRef.current);
-    const width = 1200;
-    const height = 600;
-    svg.attr("width", width).attr("height", height);
+    const width = 1360;
+    const height = 800;
+    svg.attr("width", 1360).attr("height", height);
 
     // Filter out any invalid data and sort by frequency
     const validData = data.filter(
@@ -36,16 +36,16 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     const radiusScale = d3
       .scaleSqrt()
       .domain([0, maxFrequency])
-      .range([1, 200]); // Adjusted max radius to allow for more spacing
+      .range([1, 400]); // Adjusted max radius to allow for more spacing
 
     const simulation = d3
-      .forceSimulation(sortedData)
+      .forceSimulation<d3.SimulationNodeDatum & Character>(sortedData)
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force("charge", d3.forceManyBody().strength(-30)) // Adjusted repulsion
       .force(
         "collide",
         d3
-          .forceCollide()
+          .forceCollide<d3.SimulationNodeDatum & Character>()
           .radius((d) => radiusScale(d.frequency) + 5)
           .strength(0.9)
           .iterations(4)
@@ -115,7 +115,7 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     // Initial zoom to center
     svg.call(
       zoom.transform,
-      d3.zoomIdentity.translate(width / 2, height / 2).scale(1)
+      d3.zoomIdentity.translate(width / 2, height / 2).scale(0.1)
     );
 
     // Cleanup function

@@ -1,12 +1,33 @@
 // supabase/functions/scrape-series/index.ts
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.5";
+
+const MOVIE_API_URL = "https://api.themoviedb.org/3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+};
+
+const fetchWrapper = async (url: string, options?: RequestInit) => {
+  // Fetch series details and episode data from TMDB API
+  const tmdbApiKey = Deno.env.get("TMDB_API_KEY") as string;
+
+  const response = await fetch(url, {
+    ...(options || {}),
+    headers: {
+      ...(options?.headers || {}),
+      "Authorization": `Bearer ${tmdbApiKey}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}`);
+  }
+
+  return response.json();
 };
 
 serve(async (req) => {
@@ -16,90 +37,61 @@ serve(async (req) => {
 
   try {
     const { seriesId } = await req.json();
+    console.info(`Scraping series for ${seriesId}`);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL") as string;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check if series is already scraped
-    const { data: existingData } = await supabase
+    const { data: existingSeries } = await supabase
       .from("series")
       .select("id, series_id, is_scraped")
       .eq("series_id", seriesId)
       .single();
 
-    let series = existingData;
-
-    console.log("Existing data", existingData);
-
-    if (existingData) {
+    if (existingSeries) {
       return new Response(
         JSON.stringify({ message: "Series already scraped" }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 200,
-        }
+        },
       );
     }
 
-    // Fetch series details and episode data from TMDB API
-    const tmdbApiKey = Deno.env.get("TMDB_API_KEY") as string;
-    const seriesDetails = await fetch(
-      `https://api.themoviedb.org/3/tv/${seriesId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${tmdbApiKey}`,
-        },
-      }
-    ).then((res) => res.json());
+    const seriesDetails = await fetchWrapper(
+      `${MOVIE_API_URL}/tv/${seriesId}`,
+    );
 
-    console.log("Series details", seriesDetails);
+    const { data: series, error: isError } = await supabase
+      .from("series")
+      .insert({
+        series_id: seriesId,
+        is_scraped: false,
+        start_at: seriesDetails.first_air_date,
+        end_at: seriesDetails.last_air_date,
+      })
+      .select().single();
 
-    if (!existingData) {
-      const newSeries = await supabase
-        .from("series")
-        .insert({
-          series_id: seriesId,
-          is_scraped: false,
-          start_at: seriesDetails.first_air_date,
-        })
-        .select();
-
-      series = newSeries.data[0];
-      console.log("New series", series);
+    if (isError) {
+      throw new Error(`Error inserting series for ${seriesId}`);
     }
 
-    let startDate: string | null = null;
-    let endDate: string | null = null;
-
     for (const season of seriesDetails.seasons) {
-      console.log("SCRAPING SEASON ", season.season_number);
+      console.info(
+        `Scraping ${seriesDetails.name} Season ${season.season_number}`,
+      );
       for (let episode = 1; episode <= season.episode_count; episode++) {
-        console.log("SCRAPING EPISODE ", episode);
-        const episodeDetails = await fetch(
-          `https://api.themoviedb.org/3/tv/${seriesId}/season/${season.season_number}/episode/${episode}`,
-          {
-            headers: {
-              Authorization: `Bearer ${tmdbApiKey}`,
-            },
-          }
-        ).then((res) => res.json());
-        const credits = await fetch(
-          `https://api.themoviedb.org/3/tv/${seriesId}/season/${season.season_number}/episode/${episode}/credits`,
-          {
-            headers: {
-              Authorization: `Bearer ${tmdbApiKey}`,
-            },
-          }
-        ).then((res) => res.json());
-
-        if (!startDate || episodeDetails.air_date < startDate) {
-          startDate = episodeDetails.air_date;
-        }
-        if (!endDate || episodeDetails.air_date > endDate) {
-          endDate = episodeDetails.air_date;
-        }
+        console.info(
+          `Scraping ${seriesDetails.name} Season ${season.season_number} Episode ${episode}`,
+        );
+        const episodeDetails = await fetchWrapper(
+          `${MOVIE_API_URL}/tv/${seriesId}/season/${season.season_number}/episode/${episode}`,
+        );
+        const credits = await fetchWrapper(
+          `${MOVIE_API_URL}/tv/${seriesId}/season/${season.season_number}/episode/${episode}/credits`,
+        );
 
         if (!credits.cast || credits.cast.length === 0) {
           continue;
@@ -129,8 +121,6 @@ serve(async (req) => {
       .from("series")
       .update({
         is_scraped: true,
-        start_at: startDate,
-        end_at: endDate,
       })
       .eq("series_id", seriesId);
 
@@ -139,7 +129,7 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
-      }
+      },
     );
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {

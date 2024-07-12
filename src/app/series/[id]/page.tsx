@@ -1,22 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import { TVSeries } from "@/types";
-import TimelineSlider from "@/components/TimelineSlider";
-import dynamic from "next/dynamic";
+import { ChevronLeftIcon } from "@radix-ui/react-icons";
 import moment from "moment";
+import dynamic from "next/dynamic";
+import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { Character } from "@/components/CharacterBubbleChart";
+import TimelineSlider from "@/components/TimelineSlider";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
+import { debounce } from "@/lib/utils";
+import { TVSeries } from "@/types";
 
 const CharacterBubbleChart = dynamic(
   () => import("@/components/CharacterBubbleChart"),
   { ssr: false }
 );
-
-interface CharacterFrequency {
-  name: string;
-  frequency: number;
-}
 
 export default function SeriesDetail() {
   const { id } = useParams();
@@ -25,7 +25,7 @@ export default function SeriesDetail() {
   const [isScrapingComplete, setIsScrapingComplete] = useState(false);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
-  const [characterData, setCharacterData] = useState<CharacterFrequency[]>([]);
+  const [characterData, setCharacterData] = useState<Character[]>([]);
 
   useEffect(() => {
     const fetchSeriesDetails = async () => {
@@ -118,27 +118,45 @@ export default function SeriesDetail() {
     }
   };
 
-  const handleDateRangeChange = (start: string, end: string) => {
-    if (id) {
-      fetchCharacterData(Number(id), start, end);
-    }
-  };
+  const handleDateRangeChange = debounce((start: string, end: string) => {
+    if (!id) return;
+    fetchCharacterData(Number(id), start, end);
+  }, 2000);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Loading...
+      </div>
+    );
   }
 
   if (!series) {
-    return <div>Series not found</div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        Series not found
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">{series?.name}</h1>
-      <p className="mb-4">{series?.overview}</p>
+      <div className="mb-4 flex items-center">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-7 w-7"
+          onClick={() => window.history.back()}
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </Button>
+        <h1 className="text-2xl font-bold ml-2">{series?.name}</h1>
+      </div>
       {isScrapingComplete ? (
         <>
-          <p className="text-green-600 mb-4">Data scraping complete!</p>
+          <p className="text-lg mb-4 mt-8">
+            Select range to view character frequency
+          </p>
           {startDate && endDate && (
             <TimelineSlider
               startDate={startDate}
@@ -148,7 +166,7 @@ export default function SeriesDetail() {
           )}
           <div className="mt-8">
             <h2 className="text-xl font-semibold mb-4">Character Frequency</h2>
-            <div className="w-full h-[600px] overflow-hidden">
+            <div className="w-full h-full overflow-hidden ring ring-2 ring-gray-200 rounded-lg">
               <CharacterBubbleChart data={characterData} />
             </div>
           </div>
