@@ -70,7 +70,11 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
       .attr("width", 1)
       .attr("height", 1)
       .append("image")
-      .attr("href", (d) => `https://image.tmdb.org/t/p/w500/${d.image}`)
+      .attr("href", (d) =>
+        d.image
+          ? `https://image.tmdb.org/t/p/w500/${d.image}`
+          : "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png"
+      )
       .attr("width", (d) => radiusScale(d.frequency) * 2)
       .attr("height", (d) => radiusScale(d.frequency) * 2)
       .attr("preserveAspectRatio", "xMidYMid slice");
