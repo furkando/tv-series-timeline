@@ -9,12 +9,12 @@ import { useEffect, useState } from "react";
 import { Character } from "@/components/CharacterBubbleChart";
 import TimelineSlider from "@/components/TimelineSlider";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/lib/supabase";
 import { debounce } from "@/lib/utils";
 import { TVSeries } from "@/types";
 import WordCloud from "react-d3-cloud";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
 const CharacterBubbleChart = dynamic(
   () => import("@/components/CharacterBubbleChart"),
