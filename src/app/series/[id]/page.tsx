@@ -196,7 +196,9 @@ export default function SeriesDetail() {
           </div>
         </>
       ) : (
-        <p>Scraping episode data... This may take a few minutes.</p>
+        <div className="flex justify-center items-center h-[80vh]">
+          Scraping episode data... This may take a few minutes.
+        </div>
       )}
     </div>
   );

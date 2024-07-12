@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const id = params.id;
   const { searchParams } = new URL(request.url);
@@ -18,7 +18,7 @@ export async function GET(
   if (!startDate || !endDate) {
     return NextResponse.json(
       { error: "Start date and end date are required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -27,6 +27,7 @@ export async function GET(
       .from("episode_credits")
       .select("*, series(series_id)")
       .eq("series.series_id", id)
+      .not("series", "is", null)
       .gte("air_date", startDate)
       .lte("air_date", endDate);
 
@@ -39,7 +40,10 @@ export async function GET(
         (credit: { id: number; character: string; profile_path: string }) => {
           if (!credit.character) return;
 
-          const character = credit.character.toLowerCase();
+          const character = credit.character.toLowerCase().replace(
+            "(voice)",
+            "",
+          );
           if (characterFrequency[character]) {
             characterFrequency[character] = {
               ...characterFrequency[character],
@@ -48,12 +52,12 @@ export async function GET(
           } else {
             characterFrequency[character] = {
               id: credit.id,
-              name: credit.character,
+              name: character,
               image: credit.profile_path,
               frequency: 1,
             };
           }
-        }
+        },
       );
     });
 
@@ -62,7 +66,7 @@ export async function GET(
     console.error("Error fetching character frequency:", error);
     return NextResponse.json(
       { error: "Failed to fetch character frequency" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
