@@ -21,9 +21,9 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     if (!data.length || !svgRef.current) return;
 
     const svg = d3.select(svgRef.current);
-    const width = 1360;
-    const height = 800;
-    svg.attr("width", 1360).attr("height", height);
+    const width = svgRef.current.clientWidth;
+    const height = svgRef.current.clientHeight;
+    svg.attr("width", width).attr("height", height);
 
     // Filter out any invalid data and sort by frequency
     const validData = data.filter(
@@ -46,9 +46,9 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
         "collide",
         d3
           .forceCollide<d3.SimulationNodeDatum & Character>()
-          .radius((d) => radiusScale(d.frequency) + 5)
-          .strength(0.9)
-          .iterations(4)
+          .radius((d) => radiusScale(d.frequency))
+          .strength(1)
+          .iterations(5)
       ); // Adjusted collision force
 
     const defs = svg.append("defs");
@@ -84,22 +84,22 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
       .attr("r", (d) => radiusScale(d.frequency))
       .attr("fill", (d) => `url(#image-${d.id})`);
 
-    // node
-    //   .append("text")
-    //   .attr("dy", ".3em")
-    //   .style("text-anchor", "middle")
-    //   .style(
-    //     "font-size",
-    //     (d) => `${Math.max(8, radiusScale(d.frequency) / 3)}px`
-    //   )
-    //   .text((d) =>
-    //     truncateText(d.name, Math.max(5, radiusScale(d.frequency) / 20))
-    //   );
+    node
+      .append("text")
+      .attr("dy", ".3em")
+      .style("text-anchor", "middle")
+      .style(
+        "font-size",
+        (d) => `${Math.max(8, radiusScale(d.frequency) / 5)}px`
+      )
+      .text((d) =>
+        truncateText(d.name, Math.max(5, radiusScale(d.frequency) / 20))
+      );
 
     node.append("title").text((d) => `${d.name}\nFrequency: ${d.frequency}`);
 
     simulation.on("tick", () => {
-      node.attr("transform", (d) => `translate(${d.x},${d.y})`);
+      node.attr("transform", (d: any) => `translate(${d.x},${d.y})`);
     });
 
     // Add zoom functionality
@@ -113,9 +113,10 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     svg.call(zoom);
 
     // Initial zoom to center
+    const initialScale = Math.min(width / 1360, height / 800) * 0.8;
     svg.call(
       zoom.transform,
-      d3.zoomIdentity.translate(width / 2, height / 2).scale(0.1)
+      d3.zoomIdentity.translate(width / 2, height / 2).scale(initialScale)
     );
 
     // Cleanup function
@@ -129,7 +130,7 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     return text.slice(0, Math.max(3, maxLength - 3)) + "...";
   };
 
-  return <svg ref={svgRef}></svg>;
+  return <svg ref={svgRef} style={{ width: "100%", height: "100vh" }}></svg>;
 };
 
 export default CharacterBubbleChart;
