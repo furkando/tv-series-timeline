@@ -7,9 +7,9 @@ export function cn(...inputs: ClassValue[]) {
 
 export function debounce(func: Function, wait: number, immediate = false) {
   var timeout: NodeJS.Timeout | null;
-  return function () {
-    var context = this,
-      args = arguments;
+  const debounced = function (this: any) {
+    var context = this;
+    var args = arguments;
     var later = function () {
       timeout = null;
       if (!immediate) func.apply(context, args);
@@ -19,4 +19,5 @@ export function debounce(func: Function, wait: number, immediate = false) {
     timeout = setTimeout(later, wait);
     if (callNow) func.apply(context, args);
   };
+  return debounced;
 }
