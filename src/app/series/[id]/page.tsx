@@ -12,6 +12,9 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { debounce } from "@/lib/utils";
 import { TVSeries } from "@/types";
+import WordCloud from "react-d3-cloud";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const CharacterBubbleChart = dynamic(
   () => import("@/components/CharacterBubbleChart"),
@@ -26,6 +29,7 @@ export default function SeriesDetail() {
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
   const [characterData, setCharacterData] = useState<Character[]>([]);
+  const [wordCloud, setWordCloud] = useState(true);
 
   useEffect(() => {
     const fetchSeriesDetails = async () => {
@@ -141,16 +145,26 @@ export default function SeriesDetail() {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="mb-4 flex items-center">
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-7 w-7"
-          onClick={() => window.history.back()}
-        >
-          <ChevronLeftIcon className="h-4 w-4" />
-        </Button>
-        <h1 className="text-2xl font-bold ml-2">{series?.name}</h1>
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => window.history.back()}
+          >
+            <ChevronLeftIcon className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold ml-2">{series?.name}</h1>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="word-cloud"
+            checked={wordCloud}
+            onCheckedChange={setWordCloud}
+          />
+          <Label htmlFor="word-cloud">Word Cloud</Label>
+        </div>
       </div>
       {isScrapingComplete ? (
         <>
@@ -167,7 +181,17 @@ export default function SeriesDetail() {
           <div className="mt-8">
             <h2 className="text-xl font-semibold mb-4">Character Frequency</h2>
             <div className="w-full h-full overflow-hidden ring ring-2 ring-gray-200 rounded-lg">
-              <CharacterBubbleChart data={characterData} />
+              {wordCloud ? (
+                <WordCloud
+                  spiral="rectangular"
+                  data={characterData.map((d) => ({
+                    text: d.name,
+                    value: d.frequency * 15,
+                  }))}
+                />
+              ) : (
+                <CharacterBubbleChart data={characterData} />
+              )}
             </div>
           </div>
         </>

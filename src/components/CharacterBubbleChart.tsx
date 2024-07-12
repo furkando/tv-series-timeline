@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 
 export type Character = {
   id: number;
@@ -36,20 +36,28 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     const radiusScale = d3
       .scaleSqrt()
       .domain([0, maxFrequency])
-      .range([1, 400]); // Adjusted max radius to allow for more spacing
+      .range([10, 500]); // Adjusted max radius to allow for more spacing
 
     const simulation = d3
       .forceSimulation<d3.SimulationNodeDatum & Character>(sortedData)
       .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("charge", d3.forceManyBody().strength(-30)) // Adjusted repulsion
+      .force(
+        "charge",
+        d3
+          .forceManyBody<d3.SimulationNodeDatum & Character>()
+          .strength((d) => -radiusScale(d.frequency))
+      )
       .force(
         "collide",
         d3
           .forceCollide<d3.SimulationNodeDatum & Character>()
           .radius((d) => radiusScale(d.frequency))
-          .strength(1)
-          .iterations(5)
-      ); // Adjusted collision force
+          .strength(0.2)
+          .iterations(10)
+      );
+
+    // clear existing patterns
+    svg.selectAll("defs").remove();
 
     const defs = svg.append("defs");
     defs
@@ -57,7 +65,7 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
       .data(sortedData)
       .enter()
       .append("pattern")
-      .attr("id", (d) => `image-${d.id}`)
+      .attr("id", (d) => `image-${d.id}-${d.frequency}`)
       .attr("patternUnits", "objectBoundingBox")
       .attr("width", 1)
       .attr("height", 1)
@@ -82,7 +90,7 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     node
       .append("circle")
       .attr("r", (d) => radiusScale(d.frequency))
-      .attr("fill", (d) => `url(#image-${d.id})`);
+      .attr("fill", (d) => `url(#image-${d.id}-${d.frequency})`);
 
     node
       .append("text")
@@ -96,7 +104,7 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
         truncateText(d.name, Math.max(5, radiusScale(d.frequency) / 20))
       );
 
-    node.append("title").text((d) => `${d.name}\nFrequency: ${d.frequency}`);
+    node.append("title").text((d) => `${d.name}\Episodes: ${d.frequency}`);
 
     simulation.on("tick", () => {
       node.attr("transform", (d: any) => `translate(${d.x},${d.y})`);
@@ -112,11 +120,9 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
 
     svg.call(zoom);
 
-    // Initial zoom to center
-    const initialScale = Math.min(width / 1360, height / 800) * 0.8;
     svg.call(
       zoom.transform,
-      d3.zoomIdentity.translate(width / 2, height / 2).scale(initialScale)
+      d3.zoomIdentity.translate(width / 2, height / 2).scale(0.1)
     );
 
     // Cleanup function
@@ -130,7 +136,7 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     return text.slice(0, Math.max(3, maxLength - 3)) + "...";
   };
 
-  return <svg ref={svgRef} style={{ width: "100%", height: "100vh" }}></svg>;
+  return <svg ref={svgRef} style={{ width: "100%", height: "80vh" }}></svg>;
 };
 
 export default CharacterBubbleChart;

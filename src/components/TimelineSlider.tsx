@@ -20,10 +20,6 @@ const TimelineSlider: React.FC<TimelineSliderProps> = ({
   const endMoment = moment(endDate);
   const totalDays = endMoment.diff(startMoment, "days");
 
-  useEffect(() => {
-    onDateRangeChange(startDate, endDate);
-  }, []);
-
   const handleChange = (newValue: number[]) => {
     setRange(newValue);
 
