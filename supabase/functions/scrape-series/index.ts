@@ -89,9 +89,12 @@ serve(async (req) => {
       console.info(
         `Scraping ${seriesDetails.name} Season ${season.season_number}`,
       );
-      for (let episode = 1; episode <= season.episode_count; episode++) {
+      const seasonDetails = await fetchWrapper(
+        `${MOVIE_API_URL}/tv/${seriesId}/season/${season.season_number}`,
+      );
+      for (const episode of seasonDetails.episodes) {
         console.info(
-          `Scraping ${seriesDetails.name} Season ${season.season_number} Episode ${episode}`,
+          `Scraping ${seriesDetails.name} Season ${season.season_number} Episode ${episode.episode_number}`,
         );
 
         const { data: creditData } = await supabase
@@ -99,7 +102,7 @@ serve(async (req) => {
           .select("*")
           .eq("series_id", series.id)
           .eq("season_number", season.season_number)
-          .eq("episode_number", episode)
+          .eq("episode_number", episode.episode_number)
           .single();
 
         if (creditData) {
@@ -107,10 +110,10 @@ serve(async (req) => {
         }
 
         const episodeDetails = await fetchWrapper(
-          `${MOVIE_API_URL}/tv/${seriesId}/season/${season.season_number}/episode/${episode}`,
+          `${MOVIE_API_URL}/tv/${seriesId}/season/${season.season_number}/episode/${episode.episode_number}`,
         );
         const credits = await fetchWrapper(
-          `${MOVIE_API_URL}/tv/${seriesId}/season/${season.season_number}/episode/${episode}/credits`,
+          `${MOVIE_API_URL}/tv/${seriesId}/season/${season.season_number}/episode/${episode.episode_number}/credits`,
         );
 
         let cast = credits.cast;
@@ -125,7 +128,7 @@ serve(async (req) => {
         await supabase.from("episode_credits").insert({
           series_id: series.id,
           season_number: season.season_number,
-          episode_number: episode,
+          episode_number: episode.episode_number,
           air_date: episodeDetails.air_date,
           credits: credits.cast,
         });
