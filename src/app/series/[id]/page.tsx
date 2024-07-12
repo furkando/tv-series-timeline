@@ -60,13 +60,19 @@ export default function SeriesDetail() {
       .eq("series_id", seriesId)
       .single();
 
+    if (!seriesData) {
+      startScraping(seriesId);
+    }
+
     if (seriesData?.is_scraped) {
       setIsScrapingComplete(true);
       setStartDate(seriesData.start_at);
       setEndDate(seriesData.end_at);
       fetchCharacterData(seriesId, seriesData.start_at, seriesData.end_at);
     } else {
-      startScraping(seriesId);
+      setTimeout(() => {
+        checkScrapingStatus(seriesId);
+      }, 5000);
     }
 
     setIsLoading(false);
@@ -74,7 +80,7 @@ export default function SeriesDetail() {
 
   const startScraping = async (seriesId: number) => {
     try {
-      const response = await fetch(
+      await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/scrape-series`,
         {
           method: "POST",
@@ -86,13 +92,6 @@ export default function SeriesDetail() {
         }
       );
 
-      if (response.ok) {
-        setTimeout(() => {
-          checkScrapingStatus(seriesId);
-        }, 5000);
-      } else {
-        console.error("Failed to start scraping");
-      }
       console.log("Scraping started");
     } catch (error) {
       console.error("Error starting scraping:", error);

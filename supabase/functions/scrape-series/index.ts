@@ -51,10 +51,12 @@ serve(async (req) => {
       .single();
 
     if (error) {
-      console.error(`Error fetching series for ${seriesId}, ${error.message}`);
+      console.error(
+        `Error fetching series for ${seriesId}. Error: ${error.message}`,
+      );
     }
 
-    if (existingSeries) {
+    if (existingSeries?.is_scraped) {
       return new Response(
         JSON.stringify({ message: "Series already scraped" }),
         {
@@ -70,7 +72,8 @@ serve(async (req) => {
 
     const { data: series, error: isError } = await supabase
       .from("series")
-      .insert({
+      .upsert({
+        id: existingSeries?.id,
         series_id: seriesId,
         is_scraped: false,
         start_at: seriesDetails.first_air_date,
@@ -90,6 +93,19 @@ serve(async (req) => {
         console.info(
           `Scraping ${seriesDetails.name} Season ${season.season_number} Episode ${episode}`,
         );
+
+        const { data: creditData } = await supabase
+          .from("episode_credits")
+          .select("*")
+          .eq("series_id", series.id)
+          .eq("season_number", season.season_number)
+          .eq("episode_number", episode)
+          .single();
+
+        if (creditData) {
+          continue;
+        }
+
         const episodeDetails = await fetchWrapper(
           `${MOVIE_API_URL}/tv/${seriesId}/season/${season.season_number}/episode/${episode}`,
         );
@@ -106,23 +122,13 @@ serve(async (req) => {
           cast = cast.concat(credits.guest_stars);
         }
 
-        const res = await supabase
-          .from("episode_credits")
-          .select("*")
-          .eq("series_id", series.id)
-          .eq("season_number", season.season_number)
-          .eq("episode_number", episode)
-          .single();
-
-        if (!res.data) {
-          await supabase.from("episode_credits").insert({
-            series_id: series.id,
-            season_number: season.season_number,
-            episode_number: episode,
-            air_date: episodeDetails.air_date,
-            credits: credits.cast,
-          });
-        }
+        await supabase.from("episode_credits").insert({
+          series_id: series.id,
+          season_number: season.season_number,
+          episode_number: episode,
+          air_date: episodeDetails.air_date,
+          credits: credits.cast,
+        });
       }
     }
 
