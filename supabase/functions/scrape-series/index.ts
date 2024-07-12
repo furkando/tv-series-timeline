@@ -130,7 +130,7 @@ serve(async (req) => {
           season_number: season.season_number,
           episode_number: episode.episode_number,
           air_date: episodeDetails.air_date,
-          credits: credits.cast,
+          credits: cast,
         });
       }
     }
