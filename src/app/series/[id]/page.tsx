@@ -83,7 +83,9 @@ export default function SeriesDetail() {
       );
 
       if (response.ok) {
-        checkScrapingStatus(seriesId);
+        setTimeout(() => {
+          checkScrapingStatus(seriesId);
+        }, 5000);
       } else {
         console.error("Failed to start scraping");
       }

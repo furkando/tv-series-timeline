@@ -25,7 +25,7 @@ serve(async (req) => {
     // Check if series is already scraped
     const { data: existingData } = await supabase
       .from("series")
-      .select("id, is_scraped")
+      .select("id, series_id, is_scraped")
       .eq("series_id", seriesId)
       .single();
 
@@ -67,6 +67,7 @@ serve(async (req) => {
         .select();
 
       series = newSeries.data[0];
+      console.log("New series", series);
     }
 
     let startDate: string | null = null;

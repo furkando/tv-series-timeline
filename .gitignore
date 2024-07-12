@@ -41,3 +41,6 @@ supabase/.temp
 supabase/.env
 supabase/seed.sql
 supabase/config.toml
+
+# vscode
+*.vscode
