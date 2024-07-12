@@ -2,8 +2,10 @@ import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 
 interface Character {
+  id: string;
   name: string;
   frequency: number;
+  image: string;
 }
 
 interface CharacterBubbleChartProps {
@@ -14,7 +16,6 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
   data,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
-  const nodeRef = useRef<SVGGElement>(null);
 
   useEffect(() => {
     if (!data.length || !svgRef.current) return;
@@ -35,7 +36,7 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     const radiusScale = d3
       .scaleSqrt()
       .domain([0, maxFrequency])
-      .range([10, 50]); // Adjusted max radius to allow for more spacing
+      .range([1, 200]); // Adjusted max radius to allow for more spacing
 
     const simulation = d3
       .forceSimulation(sortedData)
@@ -50,7 +51,21 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
           .iterations(4)
       ); // Adjusted collision force
 
-    const color = d3.scaleOrdinal(d3.schemeCategory10);
+    const defs = svg.append("defs");
+    defs
+      .selectAll("pattern")
+      .data(sortedData)
+      .enter()
+      .append("pattern")
+      .attr("id", (d) => `image-${d.id}`)
+      .attr("patternUnits", "objectBoundingBox")
+      .attr("width", 1)
+      .attr("height", 1)
+      .append("image")
+      .attr("href", (d) => `https://image.tmdb.org/t/p/w500/${d.image}`)
+      .attr("width", (d) => radiusScale(d.frequency) * 2)
+      .attr("height", (d) => radiusScale(d.frequency) * 2)
+      .attr("preserveAspectRatio", "xMidYMid slice");
 
     // Remove old nodes
     svg.selectAll(".node").remove();
@@ -67,19 +82,19 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     node
       .append("circle")
       .attr("r", (d) => radiusScale(d.frequency))
-      .style("fill", (d, i) => color(i.toString()));
+      .attr("fill", (d) => `url(#image-${d.id})`);
 
-    node
-      .append("text")
-      .attr("dy", ".3em")
-      .style("text-anchor", "middle")
-      .style(
-        "font-size",
-        (d) => `${Math.max(8, radiusScale(d.frequency) / 3)}px`
-      )
-      .text((d) =>
-        truncateText(d.name, Math.max(5, radiusScale(d.frequency) / 3))
-      );
+    // node
+    //   .append("text")
+    //   .attr("dy", ".3em")
+    //   .style("text-anchor", "middle")
+    //   .style(
+    //     "font-size",
+    //     (d) => `${Math.max(8, radiusScale(d.frequency) / 3)}px`
+    //   )
+    //   .text((d) =>
+    //     truncateText(d.name, Math.max(5, radiusScale(d.frequency) / 20))
+    //   );
 
     node.append("title").text((d) => `${d.name}\nFrequency: ${d.frequency}`);
 
@@ -90,7 +105,7 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     // Add zoom functionality
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([1, 8])
+      .scaleExtent([0.1, 8]) // Allow more zoom out
       .on("zoom", (event) => {
         svg.selectAll(".nodes").attr("transform", event.transform);
       });

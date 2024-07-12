@@ -33,7 +33,7 @@ serve(async (req) => {
 
     console.log("Existing data", existingData);
 
-    if (existingData?.is_scraped) {
+    if (existingData) {
       return new Response(
         JSON.stringify({ message: "Series already scraped" }),
         {
@@ -72,10 +72,9 @@ serve(async (req) => {
     let startDate: string | null = null;
     let endDate: string | null = null;
 
-    for (const season of seriesDetails.seasons.slice(1, 2)) {
+    for (const season of seriesDetails.seasons) {
       console.log("SCRAPING SEASON ", season.season_number);
-      // for (let episode = 1; episode <= season.episode_count; episode++) {
-      for (let episode = 1; episode <= 2; episode++) {
+      for (let episode = 1; episode <= season.episode_count; episode++) {
         console.log("SCRAPING EPISODE ", episode);
         const episodeDetails = await fetch(
           `https://api.themoviedb.org/3/tv/${seriesId}/season/${season.season_number}/episode/${episode}`,
@@ -101,15 +100,9 @@ serve(async (req) => {
           endDate = episodeDetails.air_date;
         }
 
-        // Store episode credits if not already stored
-
-        // const res = await supabase.from("episode_credits").insert({
-        //   series_id: series.id,
-        //   season_number: season.season_number,
-        //   episode_number: episode,
-        //   air_date: episodeDetails.air_date,
-        //   credits: credits.cast,
-        // });
+        if (!credits.cast || credits.cast.length === 0) {
+          continue;
+        }
 
         const res = await supabase
           .from("episode_credits")

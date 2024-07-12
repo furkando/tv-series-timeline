@@ -32,21 +32,32 @@ export async function GET(
 
     if (error) throw error;
 
-    const characterFrequency: { [key: string]: number } = {};
+    const characterFrequency: { [key: string]: any } = {};
 
     data.forEach((episode) => {
-      episode.credits.forEach((credit: { id: number; character: string }) => {
-        characterFrequency[credit.character] =
-          (characterFrequency[credit.character] || 0) + 1;
-      });
+      episode.credits.forEach(
+        (credit: { id: number; character: string; profile_path: string }) => {
+          if (!credit.character) return;
+
+          const character = credit.character.toLowerCase();
+          if (characterFrequency[character]) {
+            characterFrequency[character] = {
+              ...characterFrequency[character],
+              frequency: characterFrequency[character].frequency + 1,
+            };
+          } else {
+            characterFrequency[character] = {
+              id: credit.id,
+              name: credit.character,
+              image: credit.profile_path,
+              frequency: 1,
+            };
+          }
+        }
+      );
     });
 
-    const sortedCharacters = Object.entries(characterFrequency)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 20) // Get top 20 characters
-      .map(([name, frequency]) => ({ name, frequency }));
-
-    return NextResponse.json(sortedCharacters);
+    return NextResponse.json(Object.values(characterFrequency));
   } catch (error) {
     console.error("Error fetching character frequency:", error);
     return NextResponse.json(

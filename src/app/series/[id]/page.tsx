@@ -46,6 +46,7 @@ export default function SeriesDetail() {
     };
 
     fetchSeriesDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const checkScrapingStatus = async (seriesId: number) => {
