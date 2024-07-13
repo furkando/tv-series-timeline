@@ -3,8 +3,10 @@
 import { ChevronLeftIcon } from "@radix-ui/react-icons";
 import moment from "moment";
 import dynamic from "next/dynamic";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+
 import { useEffect, useState } from "react";
+import WordCloud from "react-d3-cloud";
 
 import { Character } from "@/components/CharacterBubbleChart";
 import TimelineSlider from "@/components/TimelineSlider";
@@ -14,7 +16,6 @@ import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/lib/supabase";
 import { debounce } from "@/lib/utils";
 import { TVSeries } from "@/types";
-import WordCloud from "react-d3-cloud";
 
 const CharacterBubbleChart = dynamic(
   () => import("@/components/CharacterBubbleChart"),
@@ -23,11 +24,12 @@ const CharacterBubbleChart = dynamic(
 
 export default function SeriesDetail() {
   const { id } = useParams();
+  const router = useRouter();
+
   const [series, setSeries] = useState<TVSeries | null>(null);
+  const [episodeData, setEpisodeData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isScrapingComplete, setIsScrapingComplete] = useState(false);
-  const [startDate, setStartDate] = useState<string | null>(null);
-  const [endDate, setEndDate] = useState<string | null>(null);
   const [characterData, setCharacterData] = useState<Character[]>([]);
   const [wordCloud, setWordCloud] = useState(true);
 
@@ -56,7 +58,7 @@ export default function SeriesDetail() {
   const checkScrapingStatus = async (seriesId: number) => {
     const { data: seriesData } = await supabase
       .from("series")
-      .select("is_scraped, start_at, end_at")
+      .select("*,episode_credits(id,air_date,season_number,episode_number)")
       .eq("series_id", seriesId)
       .single();
 
@@ -65,9 +67,8 @@ export default function SeriesDetail() {
     }
 
     if (seriesData?.is_scraped) {
+      setEpisodeData(seriesData.episode_credits);
       setIsScrapingComplete(true);
-      setStartDate(seriesData.start_at);
-      setEndDate(seriesData.end_at);
       fetchCharacterData(seriesId, seriesData.start_at, seriesData.end_at);
     } else {
       setTimeout(() => {
@@ -150,7 +151,7 @@ export default function SeriesDetail() {
             variant="outline"
             size="icon"
             className="h-7 w-7"
-            onClick={() => window.history.back()}
+            onClick={() => router.push("/")}
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </Button>
@@ -170,10 +171,9 @@ export default function SeriesDetail() {
           <p className="text-lg mb-4 mt-8">
             Select range to view character frequency
           </p>
-          {startDate && endDate && (
+          {episodeData && (
             <TimelineSlider
-              startDate={startDate}
-              endDate={endDate}
+              episodes={episodeData}
               onDateRangeChange={handleDateRangeChange}
             />
           )}
