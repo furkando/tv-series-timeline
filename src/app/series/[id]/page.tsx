@@ -184,7 +184,7 @@ export default function SeriesDetail() {
                 <WordCloud
                   data={characterData.map((d) => ({
                     text: d.name,
-                    value: d.frequency * (characterData.length / 10),
+                    value: d.frequency * 10,
                   }))}
                 />
               ) : (
