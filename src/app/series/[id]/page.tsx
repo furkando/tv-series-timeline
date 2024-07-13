@@ -125,7 +125,7 @@ export default function SeriesDetail() {
   const handleDateRangeChange = debounce((start: string, end: string) => {
     if (!id) return;
     fetchCharacterData(Number(id), start, end);
-  }, 2000);
+  }, 500);
 
   if (isLoading) {
     return (
@@ -182,10 +182,9 @@ export default function SeriesDetail() {
             <div className="w-full h-full overflow-hidden ring ring-2 ring-gray-200 rounded-lg">
               {wordCloud ? (
                 <WordCloud
-                  spiral="rectangular"
                   data={characterData.map((d) => ({
                     text: d.name,
-                    value: d.frequency * 15,
+                    value: d.frequency * 10,
                   }))}
                 />
               ) : (

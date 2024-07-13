@@ -30,20 +30,20 @@ export default function Home() {
 
   return (
     <main
-      className="container p-4 min-h-[100vh] h-full flex flex-col items-center justify-center"
+      className="p-4 min-h-[100dvh] h-full flex flex-col items-center justify-center"
       onKeyDown={handleKeyPress}
     >
-      <h1 className="text-xl font-bold mb-4">
-        TV Series Character Timeline
-      </h1>
-      <div className="flex space-x-2 mb-4">
-        <Input
-          type="text"
-          placeholder="Search TV series"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <Button onClick={handleSearch}>Search</Button>
+      <div className="sticky top-0 z-10 bg-white p-4">
+        <h1 className="text-xl font-bold mb-4">TV Series Character Timeline</h1>
+        <div className="flex space-x-2 mb-4">
+          <Input
+            type="text"
+            placeholder="Search TV series"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <Button onClick={handleSearch}>Search</Button>
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {searchResults?.map((series) => (
