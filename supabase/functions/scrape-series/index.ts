@@ -48,7 +48,7 @@ serve(async (req) => {
       .from("series")
       .select("id, series_id, is_scraped")
       .eq("series_id", seriesId)
-      .single();
+      .maybeSingle();
 
     if (existingSeriesError) {
       console.error(
