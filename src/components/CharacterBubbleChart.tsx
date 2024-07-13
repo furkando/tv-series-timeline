@@ -56,16 +56,20 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
           .iterations(10)
       );
 
-    // clear existing patterns
-    svg.selectAll("defs").remove();
+    const defs = svg.select("defs");
+    if (defs.empty()) {
+      svg.append("defs");
+    }
 
-    const defs = svg.append("defs");
-    defs
+    const patterns = svg
+      .select("defs")
       .selectAll("pattern")
-      .data(sortedData)
+      .data(sortedData, (d: any) => d.id);
+
+    patterns
       .enter()
       .append("pattern")
-      .attr("id", (d) => `image-${d.id}-${d.frequency}`)
+      .attr("id", (d) => `image-${d.id}`)
       .attr("patternUnits", "objectBoundingBox")
       .attr("width", 1)
       .attr("height", 1)
@@ -78,6 +82,18 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
       .attr("width", (d) => radiusScale(d.frequency) * 2)
       .attr("height", (d) => radiusScale(d.frequency) * 2)
       .attr("preserveAspectRatio", "xMidYMid slice");
+
+    patterns
+      .select("image")
+      .attr("href", (d) =>
+        d.image
+          ? `https://image.tmdb.org/t/p/w500/${d.image}`
+          : "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png"
+      )
+      .attr("width", (d) => radiusScale(d.frequency) * 2)
+      .attr("height", (d) => radiusScale(d.frequency) * 2);
+
+    patterns.exit().remove();
 
     // Remove old nodes
     svg.selectAll(".node").remove();
@@ -94,7 +110,7 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     node
       .append("circle")
       .attr("r", (d) => radiusScale(d.frequency))
-      .attr("fill", (d) => `url(#image-${d.id}-${d.frequency})`);
+      .attr("fill", (d) => `url(#image-${d.id})`);
 
     node
       .append("text")

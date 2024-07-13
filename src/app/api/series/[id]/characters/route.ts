@@ -61,7 +61,15 @@ export async function GET(
       );
     });
 
-    return NextResponse.json(Object.values(characterFrequency));
+    const characterData = Object.values(characterFrequency).sort(
+      (a, b) => b.frequency - a.frequency,
+    ).map((character) => ({
+      ...character,
+      text: character.name,
+      value: character.frequency,
+    }));
+
+    return NextResponse.json(characterData);
   } catch (error) {
     console.error("Error fetching character frequency:", error);
     return NextResponse.json(

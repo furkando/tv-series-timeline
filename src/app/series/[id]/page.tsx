@@ -1,21 +1,19 @@
 "use client";
 
 import { ChevronLeftIcon } from "@radix-ui/react-icons";
-import moment from "moment";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import WordCloud from "react-d3-cloud";
 
-import { Character } from "@/components/CharacterBubbleChart";
 import TimelineSlider from "@/components/TimelineSlider";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/lib/supabase";
-import { debounce } from "@/lib/utils";
 import { TVSeries } from "@/types";
+import moment from "moment";
 
 const CharacterBubbleChart = dynamic(
   () => import("@/components/CharacterBubbleChart"),
@@ -27,10 +25,14 @@ export default function SeriesDetail() {
   const router = useRouter();
 
   const [series, setSeries] = useState<TVSeries | null>(null);
+  const [dateRange, setDateRange] = useState<{
+    startDate: string;
+    endDate: string;
+  }>({ startDate: "", endDate: "" });
   const [episodeData, setEpisodeData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isScrapingComplete, setIsScrapingComplete] = useState(false);
-  const [characterData, setCharacterData] = useState<Character[]>([]);
+
   const [wordCloud, setWordCloud] = useState(true);
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function SeriesDetail() {
   const checkScrapingStatus = async (seriesId: number) => {
     const { data: seriesData } = await supabase
       .from("series")
-      .select("*,episode_credits(id,air_date,season_number,episode_number)")
+      .select("*,episode_credits(*)")
       .eq("series_id", seriesId)
       .single();
 
@@ -67,9 +69,12 @@ export default function SeriesDetail() {
     }
 
     if (seriesData?.is_scraped) {
+      setDateRange({
+        startDate: moment(seriesData.start_at).format("YYYY-MM-DD"),
+        endDate: moment(seriesData.end_at).format("YYYY-MM-DD"),
+      });
       setEpisodeData(seriesData.episode_credits);
       setIsScrapingComplete(true);
-      fetchCharacterData(seriesId, seriesData.start_at, seriesData.end_at);
     } else {
       setTimeout(() => {
         checkScrapingStatus(seriesId);
@@ -99,33 +104,70 @@ export default function SeriesDetail() {
     }
   };
 
-  const fetchCharacterData = async (
-    seriesId: number,
-    start: string,
-    end: string
-  ) => {
-    try {
-      const response = await fetch(
-        `/api/series/${seriesId}/characters?startDate=${moment(start)
-          .subtract(1, "day")
-          .format("YYYY-MM-DD")}&endDate=${moment(end)
-          .add(1, "d")
-          .format("YYYY-MM-DD")}`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to fetch character data");
-      }
-      const data = await response.json();
-      setCharacterData(data);
-    } catch (error) {
-      console.error("Error fetching character data:", error);
-    }
-  };
+  const characterData = useMemo(() => {
+    if (!episodeData) return [];
 
-  const handleDateRangeChange = debounce((start: string, end: string) => {
-    if (!id) return;
-    fetchCharacterData(Number(id), start, end);
-  }, 500);
+    const characterFrequency: { [key: string]: any } = {};
+
+    episodeData.forEach((episode) => {
+      if (
+        !moment(episode.air_date).isBetween(
+          moment(dateRange.startDate),
+          moment(dateRange.endDate),
+          "d",
+          "[]"
+        )
+      )
+        return;
+
+      episode.credits.forEach(
+        (credit: { id: number; character: string; profile_path: string }) => {
+          if (!credit.character) return;
+
+          const character = credit.character
+            .toLowerCase()
+            .replace("(voice)", "");
+          if (characterFrequency[character]) {
+            characterFrequency[character] = {
+              ...characterFrequency[character],
+              frequency: characterFrequency[character].frequency + 1,
+            };
+          } else {
+            characterFrequency[character] = {
+              id: credit.id,
+              name: character,
+              image: credit.profile_path,
+              frequency: 1,
+            };
+          }
+        }
+      );
+    });
+
+    const characterCount = Object.keys(characterFrequency).length;
+    const totalFrequency = Object.values(characterFrequency).reduce(
+      (acc, character) => acc + character.frequency,
+      0
+    );
+
+    const characterData = Object.values(characterFrequency)
+      .sort((a, b) => b.frequency - a.frequency)
+      .map((character) => {
+        const value = character.frequency;
+
+        return {
+          ...character,
+          text: character.name,
+          value,
+        };
+      });
+
+    return characterData;
+  }, [episodeData, dateRange]);
+
+  const handleDateRangeChange = (startDate: string, endDate: string) => {
+    setDateRange({ startDate, endDate });
+  };
 
   if (isLoading) {
     return (
@@ -181,12 +223,7 @@ export default function SeriesDetail() {
             <h2 className="text-xl font-semibold mb-4">Character Frequency</h2>
             <div className="w-full h-full overflow-hidden ring ring-2 ring-gray-200 rounded-lg">
               {wordCloud ? (
-                <WordCloud
-                  data={characterData.map((d) => ({
-                    text: d.name,
-                    value: d.frequency * 10,
-                  }))}
-                />
+                <WordCloud data={characterData} random={() => 0} />
               ) : (
                 <CharacterBubbleChart data={characterData} />
               )}
