@@ -44,16 +44,17 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") as string;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { data: existingSeries, error } = await supabase
+    const { data: existingSeries, error: existingSeriesError } = await supabase
       .from("series")
       .select("id, series_id, is_scraped")
       .eq("series_id", seriesId)
       .single();
 
-    if (error) {
+    if (existingSeriesError) {
       console.error(
-        `Error fetching series for ${seriesId}. Error: ${error.message}`,
+        `Error fetching series for ${seriesId}. Error: ${existingSeriesError.message}`,
       );
+      throw new Error(`Error fetching series for ${seriesId}`);
     }
 
     if (existingSeries?.is_scraped) {
