@@ -153,7 +153,7 @@ export default function SeriesDetail() {
     const characterData = Object.values(characterFrequency)
       .sort((a, b) => b.frequency - a.frequency)
       .map((character) => {
-        const value = character.frequency;
+        const value = character.frequency * 10;
 
         return {
           ...character,
@@ -223,7 +223,14 @@ export default function SeriesDetail() {
             <h2 className="text-xl font-semibold mb-4">Character Frequency</h2>
             <div className="w-full h-full overflow-hidden ring ring-2 ring-gray-200 rounded-lg">
               {wordCloud ? (
-                <WordCloud data={characterData} random={() => 0} />
+                <WordCloud
+                  // width={1200}
+                  // height={800}
+                  data={characterData}
+                  random={() => 0}
+                  rotate={() => 0}
+                  // fontSize={(word) => word.value * 4}
+                />
               ) : (
                 <CharacterBubbleChart data={characterData} />
               )}

@@ -95,39 +95,86 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
 
     patterns.exit().remove();
 
-    // Remove old nodes
-    svg.selectAll(".node").remove();
+    const nodes = svg.select(".nodes");
+    if (nodes.empty()) {
+      svg.append("g").attr("class", "nodes");
+    }
 
+    // Update nodes
     const node = svg
-      .append("g")
-      .attr("class", "nodes")
+      .select(".nodes")
       .selectAll(".node")
-      .data(sortedData)
-      .enter()
-      .append("g")
-      .attr("class", "node");
+      .data(sortedData, (d: any) => d.id) as unknown as d3.Selection<
+      SVGGElement,
+      Character,
+      SVGSVGElement,
+      unknown
+    >;
 
-    node
+    const nodeEnter = node.enter().append("g").attr("class", "node");
+
+    nodeEnter
       .append("circle")
-      .attr("r", (d) => radiusScale(d.frequency))
-      .attr("fill", (d) => `url(#image-${d.id})`);
+      .attr("r", 0) // Start with radius 0 for smooth transition
+      .attr("fill", (d) => `url(#image-${d.id}})`)
+      .transition()
+      .duration(750)
+      .attr("r", (d) => radiusScale(d.frequency));
 
-    node
+    nodeEnter
       .append("text")
       .attr("dy", ".3em")
       .style("text-anchor", "middle")
+      .style("pointer-events", "none")
+      .style("opacity", 0) // Start with opacity 0 for smooth transition
+      .transition()
+      .duration(750)
       .style(
         "font-size",
-        (d) => `${Math.max(8, radiusScale(d.frequency) / 5)}px`
+        (d) => `${Math.max(10, radiusScale(d.frequency) / 5)}px`
+      )
+      .style("opacity", 1)
+      .text((d) =>
+        truncateText(d.name, Math.max(5, radiusScale(d.frequency) / 20))
+      );
+
+    nodeEnter
+      .append("title")
+      .text((d) => `${d.name}\nEpisodes: ${d.frequency}`);
+
+    // Update existing nodes
+    const nodeUpdate = nodeEnter.merge(node);
+
+    nodeUpdate
+      .select("circle")
+      .transition()
+      .duration(750)
+      .attr("r", (d) => radiusScale(d.frequency))
+      .attr("fill", (d) => `url(#image-${d.id})`);
+
+    nodeUpdate
+      .select("text")
+      .transition()
+      .duration(750)
+      .style(
+        "font-size",
+        (d) => `${Math.max(10, radiusScale(d.frequency) / 5)}px`
       )
       .text((d) =>
         truncateText(d.name, Math.max(5, radiusScale(d.frequency) / 20))
       );
 
-    node.append("title").text((d) => `${d.name}\Episodes: ${d.frequency}`);
+    nodeUpdate
+      .select("title")
+      .text((d) => `${d.name}\nEpisodes: ${d.frequency}`);
+
+    node.exit().remove();
 
     simulation.on("tick", () => {
-      node.attr("transform", (d: any) => `translate(${d.x},${d.y})`);
+      nodeUpdate
+        .attr("transform", (d: any) => `translate(${d.x},${d.y})`)
+        .transition()
+        .duration(10);
     });
 
     // Add zoom functionality
