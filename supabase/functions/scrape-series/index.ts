@@ -87,6 +87,7 @@ serve(async (req) => {
     }
 
     for (const season of seriesDetails.seasons) {
+      if (season.season_number === 0) continue;
       console.info(
         `Scraping ${seriesDetails.name} Season ${season.season_number}`,
       );
