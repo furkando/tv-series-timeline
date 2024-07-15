@@ -26,8 +26,8 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
   overflow = false,
   graph = {
     zoom: 0.8,
-    offsetX: -0.05,
-    offsetY: -0.01,
+    offsetX: 0.3,
+    offsetY: -0.05,
   },
   height = 800,
   width = 1000,
@@ -52,7 +52,7 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
 
     const pack = d3
       .pack<Character>()
-      .size([width * graph.zoom, width * graph.zoom])
+      .size([height * graph.zoom, width * graph.zoom])
       .padding(padding);
 
     const root = d3
