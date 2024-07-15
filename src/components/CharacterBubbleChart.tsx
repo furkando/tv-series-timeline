@@ -12,28 +12,19 @@ export type Character = {
 type CharacterBubbleChartProps = {
   width: number;
   height: number;
-  overflow: boolean;
-  graph: {
-    zoom: number;
-    offsetX: number;
-    offsetY: number;
-  };
-  padding: number;
   data: Character[];
 };
 
 const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
-  overflow = false,
-  graph = {
+  data,
+  height = 800,
+  width = 1000,
+}) => {
+  const graph = {
     zoom: 0.8,
     offsetX: 0.3,
     offsetY: -0.05,
-  },
-  height = 800,
-  width = 1000,
-  padding = 0,
-  data,
-}) => {
+  };
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => {
@@ -44,23 +35,19 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove(); // Clear svg content before rendering
 
-    if (overflow) {
-      svg.style("overflow", "visible");
-    }
-
     const color = d3.scaleOrdinal(d3.schemeCategory10);
 
     const pack = d3
       .pack<Character>()
       .size([height * graph.zoom, width * graph.zoom])
-      .padding(padding);
+      .padding(0);
 
     const root = d3
       .hierarchy({ children: data })
-      .sum((d) => d.value)
-      .sort((a, b) => b.value - a.value);
+      .sum((d: any) => d.value)
+      .sort((a: any, b: any) => b.value - a.value);
 
-    const nodes = pack(root).leaves();
+    const nodes = pack(root as any).leaves();
 
     // Add zoom functionality
     const zoom = d3
@@ -70,7 +57,7 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
         svg.select(".bubble-chart").attr("transform", event.transform);
       });
 
-    d3.select(svgRef.current).call(zoom);
+    d3.select(svgRef.current).call(zoom as any);
 
     renderBubbles(width, nodes, color);
   };
@@ -101,7 +88,6 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
       .append("circle")
       .attr("id", (d) => d.data.id.toString())
       .attr("r", (d) => d.r)
-      .style("fill", (d) => color(nodes.indexOf(d)))
       .style("z-index", 1);
 
     node
