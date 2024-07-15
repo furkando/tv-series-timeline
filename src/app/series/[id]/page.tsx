@@ -108,17 +108,16 @@ export default function SeriesDetail() {
     if (!episodeData) return [];
 
     const characterFrequency: { [key: string]: any } = {};
+    const characterFrequencyWithoutFilter: { [key: string]: any } = {};
 
+    let maxFrequency = 1;
     episodeData.forEach((episode) => {
-      if (
-        !moment(episode.air_date).isBetween(
-          moment(dateRange.startDate),
-          moment(dateRange.endDate),
-          "d",
-          "[]"
-        )
-      )
-        return;
+      const isInRange = moment(episode.air_date).isBetween(
+        moment(dateRange.startDate),
+        moment(dateRange.endDate),
+        "d",
+        "[]"
+      );
 
       episode.credits.forEach(
         (credit: { id: number; character: string; profile_path: string }) => {
@@ -127,19 +126,35 @@ export default function SeriesDetail() {
           const character = credit.character
             .toLowerCase()
             .replace("(voice)", "");
-          if (characterFrequency[character]) {
+
+          if (isInRange) {
+            const frequency =
+              (characterFrequency[character]?.frequency ?? 0) + 1;
             characterFrequency[character] = {
-              ...characterFrequency[character],
-              frequency: characterFrequency[character].frequency + 1,
+              ...(characterFrequency[character] ?? {
+                id: credit.id,
+                name: character,
+                image: credit.profile_path,
+                frequency: 1,
+              }),
+              frequency,
             };
-          } else {
-            characterFrequency[character] = {
+          }
+
+          const frequency =
+            (characterFrequencyWithoutFilter[character]?.frequency ?? 0) + 1;
+          if (frequency > maxFrequency) {
+            maxFrequency = frequency;
+          }
+          characterFrequencyWithoutFilter[character] = {
+            ...(characterFrequencyWithoutFilter[character] ?? {
               id: credit.id,
               name: character,
               image: credit.profile_path,
               frequency: 1,
-            };
-          }
+            }),
+            frequency,
+          };
         }
       );
     });
@@ -150,10 +165,16 @@ export default function SeriesDetail() {
       0
     );
 
+    if (characterCount === 0 || totalFrequency === 0) return [];
+
+    const minFontSize = 200;
+    const maxFontSize = 1500;
     const characterData = Object.values(characterFrequency)
       .sort((a, b) => b.frequency - a.frequency)
       .map((character) => {
-        const value = character.frequency * 10;
+        const value =
+          minFontSize +
+          ((maxFontSize - minFontSize) * character.frequency) / maxFrequency;
 
         return {
           ...character,
@@ -162,7 +183,7 @@ export default function SeriesDetail() {
         };
       });
 
-    return characterData;
+    return characterData.slice(0, 100);
   }, [episodeData, dateRange]);
 
   const handleDateRangeChange = (startDate: string, endDate: string) => {
@@ -224,15 +245,18 @@ export default function SeriesDetail() {
             <div className="w-full h-full overflow-hidden ring ring-2 ring-gray-200 rounded-lg">
               {wordCloud ? (
                 <WordCloud
-                  // width={1200}
-                  // height={800}
+                  width={1200}
+                  height={800}
                   data={characterData}
-                  random={() => 0}
+                  random={() => 0.5}
                   rotate={() => 0}
-                  // fontSize={(word) => word.value * 4}
                 />
               ) : (
-                <CharacterBubbleChart data={characterData} />
+                <CharacterBubbleChart
+                  data={characterData}
+                  width={1200}
+                  height={800}
+                />
               )}
             </div>
           </div>

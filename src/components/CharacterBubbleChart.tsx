@@ -6,204 +6,147 @@ export type Character = {
   name: string;
   image: string;
   frequency: number;
+  value: number;
 };
 
 type CharacterBubbleChartProps = {
+  width: number;
+  height: number;
+  overflow: boolean;
+  graph: {
+    zoom: number;
+    offsetX: number;
+    offsetY: number;
+  };
+  padding: number;
+  valueFont: {
+    family: string;
+    size: number;
+    color: string;
+    weight: string;
+  };
+  labelFont: {
+    family: string;
+    size: number;
+    color: string;
+    weight: string;
+  };
   data: Character[];
 };
 
 const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
+  overflow = false,
+  graph = {
+    zoom: 1.1,
+    offsetX: -0.05,
+    offsetY: -0.01,
+  },
+  height = 800,
+  width = 1000,
+  padding = 0,
+  valueFont = {
+    family: "Arial",
+    size: 16,
+    color: "#fff",
+    weight: "bold",
+  },
+  labelFont = {
+    family: "Arial",
+    size: 11,
+    color: "#fff",
+    weight: "normal",
+  },
   data,
 }) => {
-  const svgRef = useRef<SVGSVGElement>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => {
-    if (!data.length || !svgRef.current) return;
-
-    const svg = d3.select(svgRef.current);
-    const width = svgRef.current.clientWidth;
-    const height = svgRef.current.clientHeight;
-    svg.attr("width", width).attr("height", height);
-
-    // Filter out any invalid data and sort by frequency
-    const validData = data.filter(
-      (d) => d.frequency != null && !isNaN(d.frequency) && d.frequency > 0
-    );
-    const sortedData = validData.sort((a, b) => b.frequency - a.frequency);
-
-    const maxFrequency = d3.max(sortedData, (d) => d.frequency) || 1;
-
-    const radiusScale = d3
-      .scaleSqrt()
-      .domain([0, maxFrequency])
-      .range([10, 500]); // Adjusted max radius to allow for more spacing
-
-    const simulation = d3
-      .forceSimulation<d3.SimulationNodeDatum & Character>(sortedData)
-      .force("center", d3.forceCenter(width / 2, height / 2))
-      .force(
-        "charge",
-        d3
-          .forceManyBody<d3.SimulationNodeDatum & Character>()
-          .strength((d) => -radiusScale(d.frequency))
-      )
-      .force(
-        "collide",
-        d3
-          .forceCollide<d3.SimulationNodeDatum & Character>()
-          .radius((d) => radiusScale(d.frequency))
-          .strength(0.2)
-          .iterations(10)
-      );
-
-    const defs = svg.select("defs");
-    if (defs.empty()) {
-      svg.append("defs");
-    }
-
-    const patterns = svg
-      .select("defs")
-      .selectAll("pattern")
-      .data(sortedData, (d: any) => d.id);
-
-    patterns
-      .enter()
-      .append("pattern")
-      .attr("id", (d) => `image-${d.id}`)
-      .attr("patternUnits", "objectBoundingBox")
-      .attr("width", 1)
-      .attr("height", 1)
-      .append("image")
-      .attr("href", (d) =>
-        d.image
-          ? `https://image.tmdb.org/t/p/w500/${d.image}`
-          : "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png"
-      )
-      .attr("width", (d) => radiusScale(d.frequency) * 2)
-      .attr("height", (d) => radiusScale(d.frequency) * 2)
-      .attr("preserveAspectRatio", "xMidYMid slice");
-
-    patterns
-      .select("image")
-      .attr("href", (d) =>
-        d.image
-          ? `https://image.tmdb.org/t/p/w500/${d.image}`
-          : "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png"
-      )
-      .attr("width", (d) => radiusScale(d.frequency) * 2)
-      .attr("height", (d) => radiusScale(d.frequency) * 2);
-
-    patterns.exit().remove();
-
-    const nodes = svg.select(".nodes");
-    if (nodes.empty()) {
-      svg.append("g").attr("class", "nodes");
-    }
-
-    // Update nodes
-    const node = svg
-      .select(".nodes")
-      .selectAll(".node")
-      .data(sortedData, (d: any) => d.id) as unknown as d3.Selection<
-      SVGGElement,
-      Character,
-      SVGSVGElement,
-      unknown
-    >;
-
-    const nodeEnter = node.enter().append("g").attr("class", "node");
-
-    nodeEnter
-      .append("circle")
-      .attr("r", 0) // Start with radius 0 for smooth transition
-      .attr("fill", (d) => `url(#image-${d.id}})`)
-      .transition()
-      .duration(750)
-      .attr("r", (d) => radiusScale(d.frequency));
-
-    nodeEnter
-      .append("text")
-      .attr("dy", ".3em")
-      .style("text-anchor", "middle")
-      .style("pointer-events", "none")
-      .style("opacity", 0) // Start with opacity 0 for smooth transition
-      .transition()
-      .duration(750)
-      .style(
-        "font-size",
-        (d) => `${Math.max(10, radiusScale(d.frequency) / 5)}px`
-      )
-      .style("opacity", 1)
-      .text((d) =>
-        truncateText(d.name, Math.max(5, radiusScale(d.frequency) / 20))
-      );
-
-    nodeEnter
-      .append("title")
-      .text((d) => `${d.name}\nEpisodes: ${d.frequency}`);
-
-    // Update existing nodes
-    const nodeUpdate = nodeEnter.merge(node);
-
-    nodeUpdate
-      .select("circle")
-      .transition()
-      .duration(750)
-      .attr("r", (d) => radiusScale(d.frequency))
-      .attr("fill", (d) => `url(#image-${d.id})`);
-
-    nodeUpdate
-      .select("text")
-      .transition()
-      .duration(750)
-      .style(
-        "font-size",
-        (d) => `${Math.max(10, radiusScale(d.frequency) / 5)}px`
-      )
-      .text((d) =>
-        truncateText(d.name, Math.max(5, radiusScale(d.frequency) / 20))
-      );
-
-    nodeUpdate
-      .select("title")
-      .text((d) => `${d.name}\nEpisodes: ${d.frequency}`);
-
-    node.exit().remove();
-
-    simulation.on("tick", () => {
-      nodeUpdate
-        .attr("transform", (d: any) => `translate(${d.x},${d.y})`)
-        .transition()
-        .duration(10);
-    });
-
-    // Add zoom functionality
-    const zoom = d3
-      .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 8]) // Allow more zoom out
-      .on("zoom", (event) => {
-        svg.selectAll(".nodes").attr("transform", event.transform);
-      });
-
-    svg.call(zoom);
-
-    svg.call(
-      zoom.transform,
-      d3.zoomIdentity.translate(width / 2, height / 2).scale(0.1)
-    );
-
-    // Cleanup function
-    return () => {
-      simulation.stop();
-    };
+    renderChart();
   }, [data]);
 
-  const truncateText = (text: string, maxLength: number) => {
-    if (text.length <= maxLength) return text;
-    return text.slice(0, Math.max(3, maxLength - 3)) + "...";
+  const renderChart = () => {
+    const svg = d3.select(svgRef.current);
+    svg.selectAll("*").remove(); // Clear svg content before rendering
+
+    if (overflow) {
+      svg.style("overflow", "visible");
+    }
+
+    const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+    const pack = d3
+      .pack<Character>()
+      .size([width * graph.zoom, width * graph.zoom])
+      .padding(padding);
+
+    const root = d3
+      .hierarchy({ children: data })
+      .sum((d) => d.value)
+      .sort((a, b) => b.value - a.value)
+      .each((d) => {
+        if (d.data.name) {
+          d.data.name = d.data.name;
+        }
+      });
+
+    const nodes = pack(root).leaves();
+    renderBubbles(width, nodes, color);
   };
 
-  return <svg ref={svgRef} style={{ width: "100%", height: "80vh" }}></svg>;
+  const renderBubbles = (
+    width: number,
+    nodes: d3.HierarchyCircularNode<Character>[],
+    color: d3.ScaleOrdinal<string, string>
+  ) => {
+    const bubbleChart = d3
+      .select(svgRef.current)
+      .append("g")
+      .attr("class", "bubble-chart")
+      .attr(
+        "transform",
+        `translate(${width * graph.offsetX}, ${width * graph.offsetY})`
+      );
+
+    const node = bubbleChart
+      .selectAll(".node")
+      .data(nodes)
+      .enter()
+      .append("g")
+      .attr("class", "node")
+      .attr("transform", (d) => `translate(${d.x}, ${d.y})`);
+
+    node
+      .append("circle")
+      .attr("id", (d) => {
+        return d.data.id.toString();
+      })
+      .attr("r", (d) => d.r - d.r * 0.04)
+      .style("fill", (d) =>
+        d.data.image ? `url(#image-${d.data.id})` : color(nodes.indexOf(d))
+      )
+      .style("z-index", 1);
+
+    node
+      .append("clipPath")
+      .attr("id", (d) => `clip-${d.data.id}`)
+      .append("circle")
+      .attr("r", (d) => d.r - d.r * 0.04);
+
+    node
+      .append("image")
+      .attr("xlink:href", (d) =>
+        d.data.image
+          ? `https://image.tmdb.org/t/p/w500/${d.data.image}`
+          : "https://developers.elementor.com/docs/assets/img/elementor-placeholder-image.png"
+      )
+      .attr("clip-path", (d) => `url(#clip-${d.data.id})`)
+      .attr("x", (d) => -d.r)
+      .attr("y", (d) => -d.r)
+      .attr("height", (d) => 2 * d.r)
+      .attr("width", (d) => 2 * d.r);
+  };
+
+  return <svg ref={svgRef} width={width} height={height}></svg>;
 };
 
 export default CharacterBubbleChart;
