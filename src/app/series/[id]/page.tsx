@@ -4,7 +4,7 @@ import { ChevronLeftIcon } from "@radix-ui/react-icons";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import WordCloud from "react-d3-cloud";
 
 import TimelineSlider from "@/components/TimelineSlider";
@@ -24,6 +24,8 @@ export default function SeriesDetail() {
   const { id } = useParams();
   const router = useRouter();
 
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+
   const [series, setSeries] = useState<TVSeries | null>(null);
   const [dateRange, setDateRange] = useState<{
     startDate: string;
@@ -34,6 +36,15 @@ export default function SeriesDetail() {
   const [isScrapingComplete, setIsScrapingComplete] = useState(false);
 
   const [wordCloud, setWordCloud] = useState(true);
+
+  const wrapperSize = useMemo(() => {
+    if (!wrapperRef.current) return { width: 1000, height: 800 };
+
+    return {
+      width: wrapperRef.current.clientWidth,
+      height: wrapperRef.current.clientHeight,
+    };
+  }, []);
 
   useEffect(() => {
     const fetchSeriesDetails = async () => {
@@ -297,11 +308,12 @@ export default function SeriesDetail() {
             <div
               className="w-full h-full overflow-hidden ring ring-2 ring-gray-200 rounded-lg"
               id="svg-wrapper"
+              ref={wrapperRef}
             >
               {wordCloud ? (
                 <WordCloud
-                  width={1200}
-                  height={800}
+                  width={wrapperSize.width}
+                  height={wrapperSize.height}
                   data={characterData}
                   random={() => 0.5}
                   rotate={() => 0}
@@ -311,8 +323,8 @@ export default function SeriesDetail() {
               ) : (
                 <CharacterBubbleChart
                   data={characterData}
-                  width={1200}
-                  height={800}
+                  width={wrapperSize.width}
+                  height={wrapperSize.height}
                 />
               )}
             </div>
