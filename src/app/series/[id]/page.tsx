@@ -215,7 +215,7 @@ export default function SeriesDetail() {
       ctx.drawImage(img, 0, 0, svgWidth, svgHeight); // Match the canvas size to the SVG size
       const png = canvas.toDataURL("image/png");
       const a = document.createElement("a");
-      a.download = "character-frequency.png";
+      a.download = `${series?.name}-word-cloud.png`;
       a.href = png;
       a.click();
     };
@@ -262,13 +262,15 @@ export default function SeriesDetail() {
             />
             <Label htmlFor="word-cloud">Word Cloud</Label>
           </div>
-          <Button
-            onClick={() => {
-              handleDownload();
-            }}
-          >
-            Download
-          </Button>
+          {wordCloud && (
+            <Button
+              onClick={() => {
+                handleDownload();
+              }}
+            >
+              Download
+            </Button>
+          )}
         </div>
       </div>
       {isScrapingComplete ? (

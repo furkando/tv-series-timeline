@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export type Character = {
   id: number;
@@ -26,17 +26,22 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     offsetY: -0.05,
   };
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     renderChart();
-  }, [data]);
+    // Set a timeout to force a re-render after a short delay
+    const timer = setTimeout(() => setIsLoaded(true), 100);
+    return () => clearTimeout(timer);
+  }, [data, isLoaded]);
 
   const renderChart = () => {
+    if (!svgRef.current) return;
+
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove(); // Clear svg content before rendering
 
     const color = d3.scaleOrdinal(d3.schemeCategory10);
-
     const pack = d3
       .pack<Character>()
       .size([height * graph.zoom, width * graph.zoom])
@@ -112,9 +117,12 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
   };
 
   return (
-    <svg ref={svgRef} width={width} height={height}>
-      <g />
-    </svg>
+    <svg
+      ref={svgRef}
+      width={width}
+      height={height}
+      style={{ touchAction: "none" }}
+    ></svg>
   );
 };
 
