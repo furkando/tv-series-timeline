@@ -18,6 +18,10 @@ export default function Home() {
         `/api/search?query=${encodeURIComponent(searchQuery)}`
       );
       const results = await response.json();
+      if (results.length === 0) {
+        alert("No tv series found");
+        return;
+      }
       setSearchResults(results);
     }
   };

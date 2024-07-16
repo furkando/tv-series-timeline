@@ -318,6 +318,7 @@ export default function SeriesDetail() {
                   random={() => 0.5}
                   rotate={() => 0}
                   fontSize={(d) => d.value}
+                  padding={3}
                   key={"word-cloud"}
                 />
               ) : (

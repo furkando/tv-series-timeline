@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 
 export type Character = {
   id: number;
@@ -17,35 +17,22 @@ type CharacterBubbleChartProps = {
 
 const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
   data,
+  width = 1200,
   height = 800,
-  width = 1000,
 }) => {
-  const graph = {
-    zoom: 0.8,
-    offsetX: 0.3,
-    offsetY: -0.05,
-  };
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     renderChart();
-    // Set a timeout to force a re-render after a short delay
-    const timer = setTimeout(() => setIsLoaded(true), 100);
-    return () => clearTimeout(timer);
-  }, [data, isLoaded]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, width, height]);
 
   const renderChart = () => {
     if (!svgRef.current) return;
-
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove(); // Clear svg content before rendering
 
-    const color = d3.scaleOrdinal(d3.schemeCategory10);
-    const pack = d3
-      .pack<Character>()
-      .size([height * graph.zoom, width * graph.zoom])
-      .padding(0);
+    const pack = d3.pack<Character>().size([width, height]).padding(0);
 
     const root = d3
       .hierarchy({ children: data })
@@ -57,29 +44,29 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
     // Add zoom functionality
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 8]) // Allow more zoom out
+      .scaleExtent([0.1, 8])
       .on("zoom", (event) => {
         svg.select(".bubble-chart").attr("transform", event.transform);
       });
 
-    d3.select(svgRef.current).call(zoom as any);
+    svg.call(zoom as any);
 
-    renderBubbles(width, nodes, color);
+    const initialTransform = d3.zoomIdentity.translate(0, 0);
+
+    svg.call(zoom.transform, initialTransform);
+
+    renderBubbles(nodes, initialTransform);
   };
 
   const renderBubbles = (
-    width: number,
     nodes: d3.HierarchyCircularNode<Character>[],
-    color: d3.ScaleOrdinal<string, string>
+    initialTransform: d3.ZoomTransform
   ) => {
     const bubbleChart = d3
       .select(svgRef.current)
       .append("g")
       .attr("class", "bubble-chart")
-      .attr(
-        "transform",
-        `translate(${width * graph.offsetX}, ${width * graph.offsetY})`
-      );
+      .attr("transform", initialTransform.toString());
 
     const node = bubbleChart
       .selectAll(".node")
@@ -93,7 +80,8 @@ const CharacterBubbleChart: React.FC<CharacterBubbleChartProps> = ({
       .append("circle")
       .attr("id", (d) => d.data.id.toString())
       .attr("r", (d) => d.r)
-      .style("z-index", 1);
+      .style("fill", "none")
+      .style("stroke", "#ccc");
 
     node
       .append("clipPath")
