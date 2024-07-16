@@ -167,8 +167,8 @@ export default function SeriesDetail() {
 
     if (characterCount === 0 || totalFrequency === 0) return [];
 
-    const minFontSize = 200;
-    const maxFontSize = 1500;
+    const minFontSize = 30;
+    const maxFontSize = 80;
     const characterData = Object.values(characterFrequency)
       .sort((a, b) => b.frequency - a.frequency)
       .map((character) => {
@@ -188,6 +188,39 @@ export default function SeriesDetail() {
 
   const handleDateRangeChange = (startDate: string, endDate: string) => {
     setDateRange({ startDate, endDate });
+  };
+
+  // get svg under wrapper and set download link as png
+  const handleDownload = () => {
+    const svgWrapper = document.getElementById("svg-wrapper");
+    if (!svgWrapper) return;
+
+    const svg = svgWrapper.querySelector("svg");
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+
+    // Set the canvas size to match the SVG size
+    const svgWidth = svg.viewBox.baseVal.width || svg.width.baseVal.value;
+    const svgHeight = svg.viewBox.baseVal.height || svg.height.baseVal.value;
+    canvas.width = svgWidth;
+    canvas.height = svgHeight;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, svgWidth, svgHeight); // Match the canvas size to the SVG size
+      const png = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.download = "character-frequency.png";
+      a.href = png;
+      a.click();
+    };
+
+    img.src = "data:image/svg+xml;base64," + btoa(svgData);
   };
 
   if (isLoading) {
@@ -220,13 +253,22 @@ export default function SeriesDetail() {
           </Button>
           <h1 className="text-2xl font-bold ml-2">{series?.name}</h1>
         </div>
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="word-cloud"
-            checked={wordCloud}
-            onCheckedChange={setWordCloud}
-          />
-          <Label htmlFor="word-cloud">Word Cloud</Label>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="word-cloud"
+              checked={wordCloud}
+              onCheckedChange={setWordCloud}
+            />
+            <Label htmlFor="word-cloud">Word Cloud</Label>
+          </div>
+          <Button
+            onClick={() => {
+              handleDownload();
+            }}
+          >
+            Download
+          </Button>
         </div>
       </div>
       {isScrapingComplete ? (
@@ -242,7 +284,10 @@ export default function SeriesDetail() {
           )}
           <div className="mt-8">
             <h2 className="text-xl font-semibold mb-4">Character Frequency</h2>
-            <div className="w-full h-full overflow-hidden ring ring-2 ring-gray-200 rounded-lg">
+            <div
+              className="w-full h-full overflow-hidden ring ring-2 ring-gray-200 rounded-lg"
+              id="svg-wrapper"
+            >
               {wordCloud ? (
                 <WordCloud
                   width={1200}
@@ -250,6 +295,8 @@ export default function SeriesDetail() {
                   data={characterData}
                   random={() => 0.5}
                   rotate={() => 0}
+                  fontSize={(d) => d.value}
+                  key={"word-cloud"}
                 />
               ) : (
                 <CharacterBubbleChart
