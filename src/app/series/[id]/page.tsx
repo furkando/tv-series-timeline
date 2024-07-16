@@ -38,7 +38,7 @@ export default function SeriesDetail() {
   const [wordCloud, setWordCloud] = useState(true);
 
   const wrapperSize = useMemo(() => {
-    if (!wrapperRef.current) return { width: 1000, height: 800 };
+    if (!wrapperRef.current) return { width: 1400, height: 800 };
 
     return {
       width: wrapperRef.current.clientWidth,
