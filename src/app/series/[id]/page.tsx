@@ -190,7 +190,6 @@ export default function SeriesDetail() {
     setDateRange({ startDate, endDate });
   };
 
-  // get svg under wrapper and set download link as png
   const handleDownload = () => {
     const svgWrapper = document.getElementById("svg-wrapper");
     if (!svgWrapper) return;
@@ -199,11 +198,10 @@ export default function SeriesDetail() {
     if (!svg) return;
 
     const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement("canvas");
-
-    // Set the canvas size to match the SVG size
     const svgWidth = svg.viewBox.baseVal.width || svg.width.baseVal.value;
     const svgHeight = svg.viewBox.baseVal.height || svg.height.baseVal.value;
+
+    const canvas = document.createElement("canvas");
     canvas.width = svgWidth;
     canvas.height = svgHeight;
 
@@ -212,15 +210,25 @@ export default function SeriesDetail() {
 
     const img = new Image();
     img.onload = () => {
-      ctx.drawImage(img, 0, 0, svgWidth, svgHeight); // Match the canvas size to the SVG size
-      const png = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
-      a.download = `${series?.name}-word-cloud.png`;
-      a.href = png;
-      a.click();
+      ctx.drawImage(img, 0, 0, svgWidth, svgHeight);
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${series?.name}-word-cloud.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, "image/png");
     };
 
-    img.src = "data:image/svg+xml;base64," + btoa(svgData);
+    img.src =
+      "data:image/svg+xml;base64," +
+      btoa(unescape(encodeURIComponent(svgData)));
   };
 
   if (isLoading) {
