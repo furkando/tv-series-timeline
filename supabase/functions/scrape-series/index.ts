@@ -99,15 +99,25 @@ serve(async (req) => {
           `Scraping ${seriesDetails.name} Season ${season.season_number} Episode ${episode.episode_number}`,
         );
 
-        const { data: creditData } = await supabase
+        const { data: creditData, error: creditError } = await supabase
           .from("episode_credits")
           .select("*")
           .eq("series_id", series.id)
           .eq("season_number", season.season_number)
           .eq("episode_number", episode.episode_number)
-          .single();
+          .maybeSingle();
+
+        if (creditError) {
+          console.error(
+            `Error fetching episode credits for ${seriesDetails.name} Season ${season.season_number} Episode ${episode.episode_number}. Error: ${creditError.message}`,
+          );
+          continue;
+        }
 
         if (creditData) {
+          console.info(
+            `Episode credits already exist for ${seriesDetails.name} Season ${season.season_number} Episode ${episode.episode_number}`,
+          );
           continue;
         }
 
