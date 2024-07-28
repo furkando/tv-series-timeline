@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# TV Series Timeline
 
-## Getting Started
+Explore character appearances in TV series over time with interactive visualizations, including a timeline with bubbles and a word cloud.
 
-First, run the development server:
+## Introduction
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+TV Series Timeline is a web application that allows users to explore character appearances in TV series over time. The application provides interactive visualizations, including a timeline with bubbles representing character appearances and a word cloud showing the frequency of character appearances within selected date ranges.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Search and Select TV Series**: Input TV series names and select from a list of results.
+- **Interactive Timeline**: Visualize character appearances over time with a bubble timeline.
+- **Dynamic Word Cloud**: Display character appearances as a word cloud, dynamically adjusted based on the selected date range.
+- **Responsive Design**: Ensures usability across different devices and screen sizes.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Tech Stack
 
-## Learn More
+- **Frontend**: React, Next.js, D3.js
+- **Backend**: Supabase (for scraping TV series data)
+- **Styling**: Tailwind CSS
 
-To learn more about Next.js, take a look at the following resources:
+## Installation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Follow these steps to set up the project locally:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+1. **Clone the repository**:
 
-## Deploy on Vercel
+   ```bash
+   git clone https://github.com/furkando/tv-series-timeline.git
+   cd tv-series-timeline
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. **Install dependencies**:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+   ```bash
+   yarn
+   ```
+
+3. **Set up Supabase**:
+
+   - Create a new project on [Supabase](https://supabase.io/).
+   - Obtain the Supabase URL and API key from your project settings.
+   - Create a `.env.local` file in the root directory and add your Supabase credentials:
+     ```env
+     NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+     NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+     SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+     TMDB_API_KEY=your-tmdb-api-key
+     ```
+
+4. **Run the development server**:
+
+   ```bash
+   yarn dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Usage
+
+1. **Search for TV Series**: Use the search bar to find TV series and select from the results.
+2. **Explore Timeline**: Visualize character appearances over time with the interactive timeline.
+3. **Adjust Date Range**: Use the slider to adjust the date range and see how character appearances change.
+4. **View Word Cloud**: The word cloud dynamically updates to show the frequency of character appearances within the selected date range.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
